@@ -4862,6 +4862,17 @@ static ULONG WINAPI session_rate_control_Release(IMFRateControl *iface)
     return IMFMediaSession_Release(&session->IMFMediaSession_iface);
 }
 
+static BOOL allow_rate_zero(void)
+{
+    static int allow = -1;
+    if (allow == -1)
+    {
+        const char *sgi = getenv("SteamGameId");
+        allow = sgi && !strcmp(sgi, "2111630") /* JR East Train Simulator */ ;
+    }
+    return allow;
+}
+
 static HRESULT WINAPI session_rate_control_SetRate(IMFRateControl *iface, BOOL thin, float rate)
 {
     struct media_session *session = impl_session_from_IMFRateControl(iface);
@@ -4870,7 +4881,7 @@ static HRESULT WINAPI session_rate_control_SetRate(IMFRateControl *iface, BOOL t
 
     TRACE("%p, %d, %f.\n", iface, thin, rate);
 
-    if (!rate)
+    if (!rate && !allow_rate_zero())
     {
         /* The Anacrusis fails to play its video if we succeed here */
         ERR("Scrubbing not implemented!\n");
