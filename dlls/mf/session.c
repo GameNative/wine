@@ -276,6 +276,8 @@ struct media_session
         /* Latest SetRate() arguments. */
         BOOL thin;
         float rate;
+
+        BOOL thin_committed;
     } presentation;
     struct list topologies;
     struct list commands;
@@ -1572,7 +1574,7 @@ static void session_set_rate(struct media_session *session, BOOL thin, float rat
     if (SUCCEEDED(hr))
         hr = IMFRateControl_GetRate(session->clock_rate_control, NULL, &clock_rate);
 
-    if (SUCCEEDED(hr) && (rate != clock_rate) && SUCCEEDED(hr = session_subscribe_sources(session)))
+    if (SUCCEEDED(hr) && (rate != clock_rate || thin != session->presentation.thin_committed) && SUCCEEDED(hr = session_subscribe_sources(session)))
     {
         LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
         {
@@ -1585,6 +1587,7 @@ static void session_set_rate(struct media_session *session, BOOL thin, float rat
                 {
                     session->presentation.flags |= SESSION_FLAG_PENDING_RATE_CHANGE;
                     session->presentation.rate = rate;
+                    session->presentation.thin = thin;
                     return;
                 }
             }
@@ -1608,6 +1611,8 @@ static void session_complete_rate_change(struct media_session *session)
 
     session->presentation.flags &= ~SESSION_FLAG_PENDING_RATE_CHANGE;
     session_set_presentation_clock(session);
+
+    session->presentation.thin_committed = session->presentation.thin;
 
     hr = IMFRateControl_SetRate(session->clock_rate_control, FALSE,
             session->presentation.rate);
@@ -4889,7 +4894,7 @@ static HRESULT WINAPI session_rate_control_GetRate(IMFRateControl *iface, BOOL *
     TRACE("%p, %p, %p.\n", iface, thin, rate);
 
     if (thin)
-        *thin = FALSE;
+        *thin = session->presentation.thin_committed;
 
     return IMFRateControl_GetRate(session->clock_rate_control, NULL, rate);
 }
