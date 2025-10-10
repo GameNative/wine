@@ -5146,7 +5146,7 @@ static void virtual_release_address_space(void)
 
 #endif  /* _WIN64 */
 
-BOOL WINAPI __wine_needs_override_large_address_aware(void)
+static int need_override_large_address_aware(void)
 {
     static int needs_override = -1;
 
@@ -5154,7 +5154,7 @@ BOOL WINAPI __wine_needs_override_large_address_aware(void)
     {
         const char *str = getenv( "WINE_LARGE_ADDRESS_AWARE" );
 
-        needs_override = !str || atoi(str) == 1;
+        needs_override = !str /* on by default */ || atoi(str) == 1;
     }
     return needs_override;
 }
@@ -5162,7 +5162,7 @@ BOOL WINAPI __wine_needs_override_large_address_aware(void)
 static BOOL is_large_address_aware(void)
 {
     return (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
-           || __wine_needs_override_large_address_aware();
+           || need_override_large_address_aware();
 }
 
 /***********************************************************************
