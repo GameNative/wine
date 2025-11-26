@@ -268,6 +268,7 @@ BOOL adjust_window_rect( RECT *rect, DWORD style, BOOL menu, DWORD ex_style, UIN
              && !(sgi && !strcmp( sgi, "2563800" )) /* Bug 23342: The Last Game */
              && !(sgi && !strcmp( sgi, "1240440" )) /* Bug 23802: Halo Infinite */
              && !(sgi && !strcmp( sgi, "613830" ))  /* Bug 25747: CHRONO TRIGGER */
+             && !(sgi && !strcmp( sgi, "3077660" )) /* Bug 26235: Mystery Manor: Hidden Objects */
             )
             return TRUE;
     }
