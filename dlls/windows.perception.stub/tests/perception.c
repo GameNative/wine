@@ -380,9 +380,12 @@ static void test_SpatialAnchorExporter(void)
     ISpatialAnchorExporterStatics *statics;
     SpatialPerceptionAccessStatus status;
     IActivationFactory *factory;
+    AsyncStatus astatus;
+    IAsyncInfo *info;
     HANDLE event;
     HSTRING str;
     HRESULT hr;
+    UINT32 id;
     LONG ref;
 
     hr = WindowsCreateString( class_name, wcslen( class_name ), &str );
@@ -433,6 +436,17 @@ static void test_SpatialAnchorExporter(void)
     hr = IAsyncOperation_SpatialPerceptionAccessStatus_GetResults( access_status, &status );
     ok( hr == S_OK, "got hr %#lx.\n", hr );
     ok( status == SpatialPerceptionAccessStatus_DeniedBySystem, "got %d.\n", status );
+
+    hr = IAsyncOperation_SpatialPerceptionAccessStatus_QueryInterface( access_status, &IID_IAsyncInfo, (void **)&info );
+    ok( hr == S_OK, "got hr %#lx.\n", hr );
+    hr = IAsyncInfo_get_Id( info, &id );
+    ok( hr == S_OK, "got hr %#lx.\n", hr );
+    ok( id == 1, "got %u.\n", id );
+    hr = IAsyncInfo_get_Status( info, &astatus );
+    ok( hr == S_OK, "got hr %#lx.\n", hr );
+    ok( astatus == Completed, "got %u.\n", id );
+    ref = IAsyncInfo_Release( info );
+    ok( ref == 1, "got ref %ld.\n", ref );
 
     ref = IAsyncOperation_SpatialPerceptionAccessStatus_Release( access_status );
     ok( !ref, "got %ld.\n", ref );

@@ -120,8 +120,68 @@ static const struct IActivationFactoryVtbl factory_vtbl =
 struct async_access_status
 {
     IAsyncOperation_SpatialPerceptionAccessStatus IAsyncOperation_SpatialPerceptionAccessStatus_iface;
+    IAsyncInfo IAsyncInfo_iface;
     LONG ref;
 };
+
+DEFINE_IINSPECTABLE(async_info, IAsyncInfo, struct async_access_status, IAsyncOperation_SpatialPerceptionAccessStatus_iface)
+
+static HRESULT WINAPI async_info_get_Id( IAsyncInfo *iface, UINT32 *id )
+{
+    TRACE( "iface %p, id %p.\n", iface, id );
+
+    *id = 1;
+    return S_OK;
+}
+
+static HRESULT WINAPI async_info_get_Status( IAsyncInfo *iface, AsyncStatus *status )
+{
+    TRACE( "iface %p, status %p.\n", iface, status );
+
+    *status = Completed;
+    return S_OK;
+}
+
+static HRESULT WINAPI async_info_get_ErrorCode( IAsyncInfo *iface, HRESULT *error_code )
+{
+    TRACE( "iface %p, error_code %p.\n", iface, error_code );
+
+    *error_code = S_OK;
+    return S_OK;
+}
+
+static HRESULT WINAPI async_info_Cancel( IAsyncInfo *iface )
+{
+    FIXME( "iface %p.\n", iface );
+
+    return S_OK;
+}
+
+static HRESULT WINAPI async_info_Close( IAsyncInfo *iface )
+{
+    FIXME( "iface %p.\n", iface );
+
+    return S_OK;
+}
+
+static const struct IAsyncInfoVtbl async_info_vtbl =
+{
+    /* IUnknown methods */
+    async_info_QueryInterface,
+    async_info_AddRef,
+    async_info_Release,
+    /* IInspectable methods */
+    async_info_GetIids,
+    async_info_GetRuntimeClassName,
+    async_info_GetTrustLevel,
+    /* IAsyncInfo */
+    async_info_get_Id,
+    async_info_get_Status,
+    async_info_get_ErrorCode,
+    async_info_Cancel,
+    async_info_Close,
+};
+
 
 static inline struct async_access_status *impl_from_IAsyncOperation_SpatialPerceptionAccessStatus( IAsyncOperation_SpatialPerceptionAccessStatus *iface )
 {
@@ -140,6 +200,13 @@ static HRESULT WINAPI async_SpatialPerceptionAccessStatus_QueryInterface( IAsync
         IsEqualGUID( iid, &IID_IAsyncOperation_SpatialPerceptionAccessStatus ))
     {
         IInspectable_AddRef( (*out = &impl->IAsyncOperation_SpatialPerceptionAccessStatus_iface) );
+        return S_OK;
+    }
+
+    if (IsEqualGUID( iid, &IID_IAsyncInfo ))
+    {
+        *out = &impl->IAsyncInfo_iface;
+        IAsyncInfo_AddRef( &impl->IAsyncInfo_iface );
         return S_OK;
     }
 
@@ -238,6 +305,7 @@ static HRESULT async_operation_SpatialPerceptionAccessStatus_create( IAsyncOpera
     *out = NULL;
     if (!(impl = calloc( 1, sizeof(*impl) ))) return E_OUTOFMEMORY;
     impl->IAsyncOperation_SpatialPerceptionAccessStatus_iface.lpVtbl = &async_SpatialPerceptionAccessStatus_vtbl;
+    impl->IAsyncInfo_iface.lpVtbl = &async_info_vtbl;
     impl->ref = 1;
 
     *out = &impl->IAsyncOperation_SpatialPerceptionAccessStatus_iface;
