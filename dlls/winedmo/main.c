@@ -30,12 +30,11 @@ static struct stream_context *stream_context_create( struct winedmo_stream *stre
 {
     struct stream_context *context;
 
-    if (!(context = malloc( sizeof(*context) + 0x10000 ))) return NULL;
+    if (!(context = malloc( 0x10000 ))) return NULL;
     context->stream = (UINT_PTR)stream;
     context->length = stream_size;
     context->position = 0;
-    context->capacity = 0x10000;
-    context->size = 0;
+    context->buffer_size = 0x10000 - offsetof(struct stream_context, buffer);
 
     return context;
 }
