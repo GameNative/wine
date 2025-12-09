@@ -239,6 +239,7 @@ enum presentation_flags
     SESSION_FLAG_SOURCE_SHUTDOWN = 0x10,
     SESSION_FLAG_PENDING_RATE_CHANGE = 0x20,
     SESSION_FLAG_RESTARTING = 0x40,
+    SESSION_FLAG_SINKS_SUBSCRIBED = 0x80,
 };
 
 struct media_session
@@ -1030,6 +1031,30 @@ static HRESULT session_subscribe_sources(struct media_session *session)
     return hr;
 }
 
+static HRESULT session_subscribe_sinks(struct media_session *session)
+{
+    struct topo_node *node;
+    HRESULT hr = S_OK;
+
+    if (session->presentation.flags & SESSION_FLAG_SINKS_SUBSCRIBED)
+        return hr;
+
+    LIST_FOR_EACH_ENTRY(node, &session->presentation.nodes, struct topo_node, entry)
+    {
+        if (node->type != MF_TOPOLOGY_OUTPUT_NODE)
+            continue;
+
+        if (FAILED(hr = IMFStreamSink_BeginGetEvent(node->object.sink_stream, &session->events_callback,
+                        node->object.object)))
+        {
+            WARN("Failed to subscribe to stream sink events, hr %#lx.\n", hr);
+        }
+    }
+
+    session->presentation.flags |= SESSION_FLAG_SINKS_SUBSCRIBED;
+    return hr;
+}
+
 static void session_flush_transforms(struct media_session *session)
 {
     struct topo_node *node;
@@ -1518,18 +1543,6 @@ static void session_set_presentation_clock(struct media_session *session)
 
         if (FAILED(hr))
             WARN("Failed to set time source, hr %#lx.\n", hr);
-
-        LIST_FOR_EACH_ENTRY(node, &session->presentation.nodes, struct topo_node, entry)
-        {
-            if (node->type != MF_TOPOLOGY_OUTPUT_NODE)
-                continue;
-
-            if (FAILED(hr = IMFStreamSink_BeginGetEvent(node->object.sink_stream, &session->events_callback,
-                    node->object.object)))
-            {
-                WARN("Failed to subscribe to stream sink events, hr %#lx.\n", hr);
-            }
-        }
 
         /* Set clock for all topology nodes. */
         LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
@@ -3306,6 +3319,7 @@ static void session_set_source_object_state(struct media_session *session, IUnkn
                 }
             }
 
+            session_subscribe_sinks(session);
             session_set_presentation_clock(session);
 
             if ((session->presentation.flags & SESSION_FLAG_NEEDS_PREROLL) && session_is_output_nodes_state(session, OBJ_STATE_STOPPED))
