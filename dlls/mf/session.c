@@ -2145,6 +2145,8 @@ static void session_set_topology(struct media_session *session, DWORD flags, IMF
                 hr = IMFTopoLoader_Load(session->topo_loader, topology, &resolved_topology, NULL /* FIXME? */);
             if (SUCCEEDED(hr))
                 hr = session_init_media_types(resolved_topology);
+            else
+                WARN("failed to load topology %p, hr %#lx.\n", topology, hr);
 
             if (SUCCEEDED(hr))
             {
@@ -2174,7 +2176,7 @@ static void session_set_topology(struct media_session *session, DWORD flags, IMF
     session_raise_topology_set(session, topology, hr);
 
     /* With no current topology set it right away, otherwise queue. */
-    if (topology)
+    if (SUCCEEDED(hr) && topology)
     {
         struct queued_topology *queued_topology;
 
@@ -5069,6 +5071,8 @@ HRESULT WINAPI MFCreateMediaSession(IMFAttributes *config, IMFMediaSession **ses
     {
         goto failed;
     }
+
+    session_clear_presentation(object);
 
     *session = &object->IMFMediaSession_iface;
 
